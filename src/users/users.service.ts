@@ -117,7 +117,9 @@ export class UsersService {
         data: {
           name: updatedUserData.name || existingUser.name,
           email: updatedUserData.email || existingUser.email,
-          password: updatedUserData.password || existingUser.password,
+          password:
+            (await this.encrypt(updatedUserData.password)) ||
+            existingUser.password,
         },
       });
 
