@@ -28,12 +28,10 @@ export class UsersController {
     @Query('take') take?: number,
     @Query('orderBy') orderBy?: string,
   ) {
-    const parsedOrderBy = this.queryParser.parseOrderBy(orderBy);
-
     return this.usersService.findUsers({
       skip,
       take,
-      orderBy: parsedOrderBy,
+      orderBy: this.queryParser.parseOrderBy(orderBy),
     });
   }
 

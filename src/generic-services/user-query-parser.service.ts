@@ -29,6 +29,29 @@ export class QueryParserService {
         parsedOrderBy[field] = prismaDirection;
       }
     }
+
     return parsedOrderBy;
+  }
+
+  /**
+   * Parses the 'where' query parameter into a format suitable for Prisma's where option.
+   *
+   * @param {string} where - The 'where' query parameter (e.g., 'name:John' or 'age:gte:25').
+   * @returns {Prisma.UserWhereInput | Prisma.TaskWhereInput} - The parsed where object.
+   */
+  parseWhere(where: string): Prisma.UserWhereInput | Prisma.TaskWhereInput {
+    const parsedWhere: Prisma.UserWhereInput | Prisma.TaskWhereInput = {};
+
+    if (where) {
+      const clauses = where.split(';');
+
+      clauses.forEach((clause) => {
+        const [field, value] = clause.split(':');
+
+        parsedWhere[field] = value;
+      });
+    }
+
+    return parsedWhere;
   }
 }

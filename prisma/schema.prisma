@@ -23,14 +23,17 @@ model Task {
   topic       String
   description String
   dueDate     DateTime
-  createdDate DateTime
-  status      Status
+  createdDate DateTime @default(now())
+  status      Status   @default(TO_DO)
   user        User     @relation(fields: [userId], references: [id])
-  userId      String
+  userId      String   @unique
+
+  @@unique([topic, description, dueDate])
 }
 
 enum Status {
   TO_DO
   IN_PROGRESS
   COMPLETED
+  MISSED
 }
