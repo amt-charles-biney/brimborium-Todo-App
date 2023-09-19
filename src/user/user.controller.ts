@@ -1,4 +1,4 @@
-import { Body, Controller, Post } from '@nestjs/common';
+import { Body, Controller, Get, Post, Query, UseGuards } from '@nestjs/common';
 import { CreateUserDto } from './dtos/create-user.dto';
 import { UserService } from './user.service';
 
@@ -12,5 +12,18 @@ export class UserController {
       status: true,
       data: { id: await this.userService.createUser(user) },
     };
+  }
+
+  @Get()
+  findAll(
+    @Query('skip') skip?: number,
+    @Query('take') take?: number,
+    @Query('orderBy') orderBy?: string,
+  ) {
+    return this.userService.findUsers({
+      skip,
+      take,
+      orderBy,
+    });
   }
 }
