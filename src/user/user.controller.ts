@@ -19,7 +19,7 @@ export class UserController {
     };
   }
 
-  @Get()
+  @Get('all')
   findAll(
     @Query('skip') skip?: number,
     @Query('take') take?: number,
