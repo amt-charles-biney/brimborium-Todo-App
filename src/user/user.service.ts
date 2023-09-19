@@ -1,8 +1,8 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { Prisma, User } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../prisma.service';
-import { CreateUserDto, UserResultDto } from './dtos';
+import { CreateUserDto, UpdateUserDto, UserResultDto } from './dtos';
 
 @Injectable()
 export class UserService {
@@ -14,6 +14,16 @@ export class UserService {
     const hash = await bcrypt.hash(password, saltOrRounds);
 
     return hash;
+  }
+
+  async findUserByIdOrFail(id: string): Promise<User> {
+    const user = await this.prisma.user.findUnique({
+      where: { id },
+    });
+
+    if (!user) throw new HttpException('User not found', HttpStatus.NOT_FOUND);
+
+    return user;
   }
 
   async createUser(user: CreateUserDto): Promise<string> {
@@ -60,11 +70,37 @@ export class UserService {
     });
 
     const result = users.map((user) => {
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const { password, ...result } = user;
-      return result;
+      delete user.password;
+      return user;
     });
 
     return result;
+  }
+
+  async updateUser(
+    id: string,
+    updatedUserData: UpdateUserDto,
+  ): Promise<UserResultDto> {
+    try {
+      const existingUser = await this.findUserByIdOrFail(id);
+
+      const updateData = {
+        name: updatedUserData.name || existingUser.name,
+        email: updatedUserData.email || existingUser.email,
+        password: updatedUserData.password
+          ? await this.encrypt(updatedUserData.password)
+          : existingUser.password,
+      };
+
+      const updatedUser = await this.prisma.user.update({
+        where: { id },
+        data: updateData,
+      });
+
+      delete updatedUser.password;
+      return updatedUser;
+    } catch (error) {
+      throw new HttpException('Failed to update user', HttpStatus.BAD_REQUEST);
+    }
   }
 }
