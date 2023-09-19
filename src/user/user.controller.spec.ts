@@ -5,6 +5,7 @@ import { UserController } from './user.controller';
 import { UserService } from './user.service';
 import { PrismaService } from '../prisma.service';
 import { QueryParserService } from '../utilities/query-parser.service';
+import { UpdateUserDto } from './dtos';
 
 describe('UserController', () => {
   let userController: UserController;
@@ -83,5 +84,23 @@ describe('UserController', () => {
     );
 
     expect(result[0].name).toEqual('User B');
+  });
+
+  it('should update user data and return the updated user', async () => {
+    const userId = '1';
+    const updatedUserData: UpdateUserDto = {
+      name: 'Updated Name',
+      email: 'updated@example.com',
+      password: 'newPassword',
+    };
+
+    userService.updateUser = jest.fn().mockResolvedValue(updatedUserData);
+
+    const result = await userController.updateUser(userId, updatedUserData);
+
+    expect(result).toEqual({
+      status: true,
+      data: updatedUserData,
+    });
   });
 });

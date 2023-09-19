@@ -1,8 +1,17 @@
-import { Body, Controller, Get, Post, Query } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Query,
+} from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { QueryParserService } from '../utilities/query-parser.service';
+import { UpdateUserDto } from './dtos';
 import { CreateUserDto } from './dtos/create-user.dto';
 import { UserService } from './user.service';
-import { Prisma } from '@prisma/client';
 
 @Controller('user')
 export class UserController {
@@ -34,5 +43,13 @@ export class UserController {
       ) as Prisma.UserOrderByWithRelationInput,
       where: this.queryParser.parseQuery(where) as Prisma.UserWhereInput,
     });
+  }
+
+  @Patch(':id')
+  async updateUser(@Param('id') id: string, @Body() user: UpdateUserDto) {
+    return {
+      status: true,
+      data: await this.userService.updateUser(id, user),
+    };
   }
 }
