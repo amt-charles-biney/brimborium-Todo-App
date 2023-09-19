@@ -83,4 +83,25 @@ describe('UserService', () => {
       expect(error.getStatus()).toEqual(HttpStatus.INTERNAL_SERVER_ERROR);
     }
   });
+
+  it('should return an array of users with default parameters', async () => {
+    prismaService.user.findMany = jest.fn().mockResolvedValue([
+      {
+        id: '1',
+        name: 'User 1',
+        email: 'user1@example.com',
+        password: 'hashed_password',
+      },
+      {
+        id: '2',
+        name: 'User 2',
+        email: 'user2@example.com',
+        password: 'hashed_password',
+      },
+    ]);
+
+    const result = await userService.findUsers({});
+
+    expect(result).toHaveLength(2);
+  });
 });

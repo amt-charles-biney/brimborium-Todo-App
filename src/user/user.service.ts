@@ -1,7 +1,8 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../prisma.service';
-import { CreateUserDto } from './dtos/create-user.dto';
+import { CreateUserDto, UserResultDto } from './dtos';
 
 @Injectable()
 export class UserService {
@@ -39,5 +40,31 @@ export class UserService {
         );
       }
     }
+  }
+
+  async findUsers(params: {
+    skip?: number;
+    take?: number;
+    cursor?: Prisma.UserWhereUniqueInput;
+    where?: Prisma.UserWhereInput;
+    orderBy?: Prisma.UserOrderByWithRelationInput;
+  }): Promise<UserResultDto[]> {
+    const { skip, take, cursor, where, orderBy } = params;
+
+    const users = await this.prisma.user.findMany({
+      skip: skip && +skip,
+      take: take && +take,
+      cursor,
+      where,
+      orderBy,
+    });
+
+    const result = users.map((user) => {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { password, ...result } = user;
+      return result;
+    });
+
+    return result;
   }
 }
