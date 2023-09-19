@@ -104,4 +104,58 @@ describe('UserService', () => {
 
     expect(result).toHaveLength(2);
   });
+
+  it('should update user data', async () => {
+    const userId = '1';
+    const updatedUserData = {
+      name: 'Updated Name',
+      email: 'updated@example.com',
+      password: 'newPassword',
+    };
+
+    prismaService.user.findUnique = jest.fn().mockResolvedValue({
+      id: userId,
+      name: 'Original Name',
+      email: 'original@example.com',
+      password: 'originalHashedPassword',
+    });
+
+    userService.findUserByIdOrFail = jest.fn().mockResolvedValue({
+      id: userId,
+      name: 'Original Name',
+      email: 'original@example.com',
+      password: 'originalHashedPassword',
+    });
+
+    const expectedResult = {
+      ...updatedUserData,
+      id: userId,
+    };
+
+    prismaService.user.update = jest.fn().mockResolvedValue({
+      id: userId,
+      ...updatedUserData,
+    });
+
+    delete expectedResult.password;
+
+    const result = await userService.updateUser(userId, updatedUserData);
+
+    expect(userService.findUserByIdOrFail).toBeCalled();
+    expect(result).toEqual(expectedResult);
+  });
+
+  it('should throw a BAD_REQUEST exception if user is not found', async () => {
+    const userId = '1';
+
+    prismaService.user.findUnique = jest.fn().mockResolvedValue(null);
+
+    try {
+      await userService.findUserByIdOrFail(userId);
+    } catch (error) {
+      expect(error).toBeInstanceOf(HttpException);
+      expect(error.message).toEqual('User not found');
+      expect(error.getStatus()).toEqual(HttpStatus.NOT_FOUND);
+    }
+  });
 });
