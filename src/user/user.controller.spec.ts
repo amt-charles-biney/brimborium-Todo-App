@@ -103,4 +103,37 @@ describe('UserController', () => {
       data: updatedUserData,
     });
   });
+
+  it('should delete a user successfully', async () => {
+    const userId = '1';
+
+    userService.deleteUser = jest.fn();
+
+    const result = await userController.deleteUser(userId);
+
+    expect(result).toEqual({
+      status: true,
+      message: 'User deleted successfully',
+    });
+
+    expect(userService.deleteUser).toHaveBeenCalledWith(userId);
+  });
+
+  it('should handle a user not found error', async () => {
+    const userId = '1';
+
+    userService.deleteUser = jest
+      .fn()
+      .mockRejectedValue(
+        new HttpException('User not found', HttpStatus.NOT_FOUND),
+      );
+
+    try {
+      await userController.deleteUser(userId);
+    } catch (error) {
+      expect(error).toBeInstanceOf(HttpException);
+      expect(error.message).toEqual('User not found');
+      expect(error.getStatus()).toEqual(HttpStatus.NOT_FOUND);
+    }
+  });
 });
