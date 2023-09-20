@@ -111,4 +111,37 @@ export class UserService {
       throw new HttpException('Failed to update user', HttpStatus.BAD_REQUEST);
     }
   }
+
+  async deleteUser(id: string): Promise<void> {
+    try {
+      await this.findUserByIdOrFail(id);
+
+      await this.prisma.user.delete({
+        where: {
+          id,
+        },
+      });
+    } catch (error) {
+      if (error instanceof HttpException) {
+        throw error;
+      } else if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        if (error.code === 'P2025') {
+          throw new HttpException(
+            'User deletion failed due to constraints',
+            HttpStatus.BAD_REQUEST,
+          );
+        } else {
+          throw new HttpException(
+            'Failed to delete user',
+            HttpStatus.INTERNAL_SERVER_ERROR,
+          );
+        }
+      } else {
+        throw new HttpException(
+          'Failed to delete user',
+          HttpStatus.INTERNAL_SERVER_ERROR,
+        );
+      }
+    }
+  }
 }

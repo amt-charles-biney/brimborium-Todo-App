@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   Patch,
@@ -50,6 +51,15 @@ export class UserController {
     return {
       status: true,
       data: await this.userService.updateUser(id, user),
+    };
+  }
+
+  @Delete(':id')
+  async deleteUser(@Param('id') id: string) {
+    await this.userService.deleteUser(id);
+    return {
+      status: true,
+      message: 'User deleted successfully',
     };
   }
 }
