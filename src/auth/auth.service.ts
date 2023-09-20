@@ -3,10 +3,23 @@ import { Injectable, UnauthorizedException } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import { UserResultDto } from 'src/user/dtos';
 import { UserService } from '../user/user.service';
+import { PrismaService } from '../prisma.service';
 
 @Injectable()
 export class AuthService {
-  constructor(private userService: UserService) {}
+  constructor(
+    private userService: UserService,
+    private prismaService: PrismaService,
+  ) {}
+
+  async updateLastLogin(id: string) {
+    await this.prismaService.user.update({
+      where: { id },
+      data: {
+        lastLogin: new Date().toISOString(),
+      },
+    });
+  }
 
   async signIn(
     incomingEmail: string,
@@ -23,6 +36,8 @@ export class AuthService {
     if (!isMatch) {
       throw new UnauthorizedException();
     }
+
+    await this.updateLastLogin(user.id);
 
     const { password, ...result } = user;
 

@@ -28,6 +28,7 @@ describe('AuthService', () => {
     });
 
     const result = await authService.signIn(email, password);
+    authService.updateLastLogin = jest.fn().mockResolvedValue(null);
 
     expect(result).toEqual({ email });
   });
