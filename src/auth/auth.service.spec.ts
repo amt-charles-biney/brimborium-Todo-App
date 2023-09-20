@@ -27,8 +27,8 @@ describe('AuthService', () => {
       password: await bcrypt.hash(password, 10),
     });
 
-    const result = await authService.signIn(email, password);
     authService.updateLastLogin = jest.fn().mockResolvedValue(null);
+    const result = await authService.signIn(email, password);
 
     expect(result).toEqual({ email });
   });
