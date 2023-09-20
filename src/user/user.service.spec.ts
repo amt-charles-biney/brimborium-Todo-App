@@ -158,4 +158,80 @@ describe('UserService', () => {
       expect(error.getStatus()).toEqual(HttpStatus.NOT_FOUND);
     }
   });
+
+  it('should delete a user successfully', async () => {
+    const userId = '1';
+
+    prismaService.user.delete = jest.fn().mockResolvedValue({ id: userId });
+
+    userService.findUserByIdOrFail = jest.fn().mockResolvedValue({
+      id: userId,
+      name: 'Original Name',
+      email: 'original@example.com',
+      password: 'originalHashedPassword',
+    });
+
+    await userService.deleteUser(userId);
+
+    expect(prismaService.user.delete).toHaveBeenCalledWith({
+      where: { id: userId },
+    });
+  });
+
+  it('should handle a user not found error', async () => {
+    const userId = '1';
+
+    userService.findUserByIdOrFail = jest
+      .fn()
+      .mockRejectedValue(
+        new HttpException('User not found', HttpStatus.NOT_FOUND),
+      );
+
+    try {
+      await userService.deleteUser(userId);
+    } catch (error) {
+      expect(error).toBeInstanceOf(HttpException);
+      expect(error.message).toEqual('User not found');
+      expect(error.getStatus()).toEqual(HttpStatus.NOT_FOUND);
+    }
+  });
+
+  it('should handle other Prisma request errors', async () => {
+    const userId = '1';
+
+    prismaService.user.delete = jest.fn().mockRejectedValue({
+      code: 'SomeOtherCode',
+    });
+
+    userService.findUserByIdOrFail = jest.fn().mockResolvedValue({
+      id: userId,
+      name: 'Original Name',
+      email: 'original@example.com',
+      password: 'originalHashedPassword',
+    });
+
+    try {
+      await userService.deleteUser(userId);
+    } catch (error) {
+      expect(error).toBeInstanceOf(HttpException);
+      expect(error.message).toEqual('Failed to delete user');
+      expect(error.getStatus()).toEqual(HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+  });
+
+  it('should handle other non-HttpException errors', async () => {
+    const userId = '1';
+
+    userService.findUserByIdOrFail = jest
+      .fn()
+      .mockRejectedValue(new Error('SomeError'));
+
+    try {
+      await userService.deleteUser(userId);
+    } catch (error) {
+      expect(error).toBeInstanceOf(HttpException);
+      expect(error.message).toEqual('Failed to delete user');
+      expect(error.getStatus()).toEqual(HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+  });
 });
