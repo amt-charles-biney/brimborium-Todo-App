@@ -7,5 +7,6 @@ import { QueryParserService } from 'src/utilities/query-parser.service';
 @Module({
   controllers: [UserController],
   providers: [UserService, PrismaService, QueryParserService],
+  exports: [UserService],
 })
 export class UserModule {}
