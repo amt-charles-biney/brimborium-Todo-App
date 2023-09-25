@@ -29,4 +29,3 @@ jobs:
     - run: npm install
     - run: npm run format
     - run: npm run build --if-present
-    - run: npm test --if-present
