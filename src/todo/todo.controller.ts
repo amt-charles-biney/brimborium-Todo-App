@@ -12,7 +12,7 @@ import { Request as ExpressRequest } from 'express';
 import { AuthenticatedGuard } from '../auth/auth.guard';
 import { CreateTaskDTO } from './dtos';
 import { TodoService } from './todo.service';
-import { QueryParserService } from 'src/utilities/query-parser.service';
+import { QueryParserService } from '../utilities/query-parser.service';
 
 @Controller('todo')
 export class TodoController {
