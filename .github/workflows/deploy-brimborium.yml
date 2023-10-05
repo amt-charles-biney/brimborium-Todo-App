@@ -1,0 +1,22 @@
+name: Deploy Brimborium Backend
+
+on:
+  push:
+    branches: ['staging', 'main']
+
+jobs:
+  deploy:
+    runs-on: self-hosted
+    strategy:
+      matrix:
+        node-version: [18.x]
+
+    steps:
+      - name: Fetch codebase
+        uses: actions/checkout@v3
+
+      - name: Build docker image
+        run: docker-compose build --no-cache
+
+      - name: Restart the server
+        run: docker-compose up -d
