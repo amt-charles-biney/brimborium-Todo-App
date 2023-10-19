@@ -2,12 +2,27 @@ import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { Prisma, User } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../prisma.service';
-import { CreateUserDto, UpdateUserDto, UserResultDto } from './dtos';
+import type { CreateUserDto, UpdateUserDto, UserResultDto } from './dtos';
 
+/**
+ * Service responsible for user-related operations.
+ * @class
+ */
 @Injectable()
 export class UserService {
+  /**
+   * Creates a new instance of the UserService.
+   * @constructor
+   * @param {PrismaService} prisma - An instance of the PrismaService for database access.
+   */
   constructor(private prisma: PrismaService) {}
 
+  /**
+   * Encrypts a string using bcrypt.
+   *
+   * @param {string} key - The string to encrypt.
+   * @returns {Promise<string>} - A promise that resolves with the hashed string.
+   */
   private async encrypt(key: string): Promise<string> {
     const saltOrRounds = 10;
     const password = key;
@@ -16,6 +31,13 @@ export class UserService {
     return hash;
   }
 
+  /**
+   * Finds a user by their ID or throws an exception if not found.
+   *
+   * @param {string} id - The user's ID.
+   * @returns {Promise<User>} - A promise that resolves with the user object.
+   * @throws {HttpException} - Throws an exception if the user is not found.
+   */
   async findUserByIdOrFail(id: string): Promise<User> {
     const user = await this.prisma.user.findUnique({
       where: { id },
@@ -26,7 +48,13 @@ export class UserService {
     return user;
   }
 
-  async findUserByEmail(email: string): Promise<User> {
+  /**
+   * Finds a user by their email.
+   *
+   * @param {string} email - The user's email.
+   * @returns {Promise<User>} - A promise that resolves with the user object, or null if not found.
+   */
+  async findUserByEmail(email: string): Promise<User | null> {
     const user = await this.prisma.user.findUnique({
       where: { email },
     });
@@ -34,6 +62,13 @@ export class UserService {
     return user;
   }
 
+  /**
+   * Creates a new user.
+   *
+   * @param {CreateUserDto} user - The user data to create.
+   * @returns {Promise<string>} - A promise that resolves with the new user's ID.
+   * @throws {HttpException} - Throws an exception for duplicate email or server error.
+   */
   async createUser(user: CreateUserDto): Promise<string> {
     try {
       const newUser = await this.prisma.user.create({
@@ -60,6 +95,12 @@ export class UserService {
     }
   }
 
+  /**
+   * Finds a list of users based on query parameters.
+   *
+   * @param {object} params - Query parameters for filtering and sorting.
+   * @returns {Promise<UserResultDto[]>} - A promise that resolves with a list of users.
+   */
   async findUsers(params: {
     skip?: number;
     take?: number;
@@ -85,6 +126,14 @@ export class UserService {
     return result;
   }
 
+  /**
+   * Updates a user's information.
+   *
+   * @param {string} id - The ID of the user to update.
+   * @param {UpdateUserDto} updatedUserData - The updated user data.
+   * @returns {Promise<UserResultDto>} - A promise that resolves with the updated user data.
+   * @throws {HttpException} - Throws an exception if the user is not found or the update fails.
+   */
   async updateUser(
     id: string,
     updatedUserData: UpdateUserDto,
@@ -112,6 +161,12 @@ export class UserService {
     }
   }
 
+  /**
+   * Deletes a user by their ID.
+   *
+   * @param {string} id - The ID of the user to delete.
+   * @throws {HttpException} - Throws an exception if the user is not found or the deletion fails.
+   */
   async deleteUser(id: string): Promise<void> {
     try {
       await this.findUserByIdOrFail(id);
