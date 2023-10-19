@@ -5,16 +5,31 @@ import {
 } from 'express';
 import { LocalAuthGuard } from './local/local.guard';
 
+/**
+ * Controller for authentication-related endpoints.
+ */
 @Controller('auth')
 export class AuthController {
   constructor() {}
 
+  /**
+   * Handle user login using the LocalAuthGuard.
+   *
+   * @param {ExpressRequest} req - The Express request object.
+   * @returns {Express.User} The user data upon successful login.
+   */
   @UseGuards(LocalAuthGuard)
   @Post('login')
-  async login(@Request() req: ExpressRequest) {
+  async login(@Request() req: ExpressRequest): Promise<Express.User> {
     return req.user;
   }
 
+  /**
+   * Handle user logout and session destruction.
+   *
+   * @param {ExpressRequest} req - The Express request object.
+   * @param {ExpressResponse} res - The Express response object.
+   */
   @Post('logout')
   async logout(
     @Request() req: ExpressRequest,

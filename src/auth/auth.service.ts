@@ -1,10 +1,13 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
-import { UserResultDto } from 'src/user/dtos';
+import type { UserResultDto } from 'src/user/dtos';
 import { UserService } from '../user/user.service';
 import { PrismaService } from '../prisma.service';
 
+/**
+ * Service responsible for authentication and user sign-in.
+ */
 @Injectable()
 export class AuthService {
   constructor(
@@ -12,6 +15,11 @@ export class AuthService {
     private prismaService: PrismaService,
   ) {}
 
+  /**
+   * Update the last login date for a user.
+   *
+   * @param {string} id - The ID of the user whose last login is to be updated.
+   */
   async updateLastLogin(id: string) {
     await this.prismaService.user.update({
       where: { id },
@@ -21,6 +29,14 @@ export class AuthService {
     });
   }
 
+  /**
+   * Sign in a user with their email and password.
+   *
+   * @param {string} incomingEmail - The user's email for sign-in.
+   * @param {string} incomingPassword - The user's password for sign-in.
+   * @returns {Promise<UserResultDto>} A promise that resolves to user data (excluding the password).
+   * @throws {UnauthorizedException} If the sign-in is unsuccessful.
+   */
   async signIn(
     incomingEmail: string,
     incomingPassword: string,
