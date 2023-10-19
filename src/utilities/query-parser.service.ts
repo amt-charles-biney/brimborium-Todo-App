@@ -12,7 +12,7 @@ export class QueryParserService {
    * @returns {Object} An object representing the parsed query with keys and values.
    */
   parseQuery(query: string): object {
-    const parsedQuery = {};
+    const parsedQuery: Record<string, string> = {};
 
     if (query) {
       const clauses = query.split(';');
