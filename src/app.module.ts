@@ -4,6 +4,7 @@ import { QueryParserService } from './utilities/query-parser.service';
 import { AuthModule } from './auth/auth.module';
 import { PassportModule } from '@nestjs/passport';
 import { TodoModule } from './todo/todo.module';
+import { TaskStatusModule } from './jobs/task-status.module';
 
 @Module({
   imports: [
@@ -11,6 +12,7 @@ import { TodoModule } from './todo/todo.module';
     AuthModule,
     PassportModule.register({ session: true }),
     TodoModule,
+    TaskStatusModule,
   ],
   providers: [QueryParserService],
 })
