@@ -1,0 +1,140 @@
+import { InjectQueue } from '@nestjs/bull';
+import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
+import { Prisma, Task } from '@prisma/client';
+import { Queue } from 'bull';
+import { PrismaService } from '../prisma.service';
+import type { CreateTaskDTO, UpdateTaskDTO } from './dtos';
+
+/**
+ * Service for managing to-do tasks.
+ */
+@Injectable()
+export class TodoService {
+  constructor(
+    private prisma: PrismaService,
+    @InjectQueue('task-status') private readonly taskStatusQueue: Queue,
+  ) {}
+
+  /**
+   * Get a task by its ID.
+   *
+   * @param taskId - The ID of the task to retrieve.
+   * @returns {Promise<Task>} A promise that resolves to the retrieved task, or null if not found.
+   * @throws {HttpException} Throws an exception if the task could not be found.
+   */
+  async getTask(taskId: string): Promise<Task | null> {
+    try {
+      const task = await this.prisma.task.findUnique({
+        where: { id: taskId },
+      });
+
+      if (task === null) {
+        throw new HttpException('Task not found', HttpStatus.NOT_FOUND);
+      }
+
+      return task;
+    } catch (error) {
+      throw new HttpException(
+        'Failed to retrieve the task',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  /**
+   * Create a new task and sets a new queue for status update.
+   *
+   * @param task - The task data to be created.
+   * @param id - The user ID to associate with the task.
+   * @returns {Promise<Task>} A promise that resolves to the created task.
+   * @throws {HttpException} Throws an exception if the task couldn't be created.
+   */
+  async createTask(task: CreateTaskDTO, id: string): Promise<Task> {
+    try {
+      const newTask = await this.prisma.task.create({
+        data: {
+          topic: task.topic,
+          description: task.description,
+          dueDate: task.dueDate,
+          user: { connect: { id } },
+        },
+      });
+
+      await this.taskStatusQueue.add('updateStatus', {
+        taskId: newTask.id,
+        dueDate: newTask.dueDate,
+      });
+
+      return newTask;
+    } catch (error) {
+      throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+  }
+
+  /**
+   * Get a list of tasks with optional pagination and filtering.
+   *
+   * @param params - An object containing optional parameters for filtering and pagination.
+   * @returns {Promise<Task[]>} A promise that resolves to a list of tasks that match the specified criteria.
+   * @throws {HttpException} Throws an exception if the tasks could not be found or processed.
+   */
+  async tasks(params: {
+    skip?: number;
+    take?: number;
+    cursor?: Prisma.TaskWhereUniqueInput;
+    where?: Prisma.TaskWhereInput;
+    orderBy?: Prisma.TaskOrderByWithRelationInput;
+  }): Promise<Task[]> {
+    try {
+      const { skip, take, cursor, where, orderBy } = params;
+      const tasks = await this.prisma.task.findMany({
+        skip,
+        take,
+        cursor,
+        where,
+        orderBy,
+      });
+
+      return tasks;
+    } catch (error) {
+      throw new HttpException(
+        'Failed to retrieve tasks',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  /**
+   * Update a task by its ID.
+   *
+   * @param {string} id - The ID of the task to update.
+   * @param {UpdateTaskDTO} task - The updated task data.
+   * @returns {Promise<Task>} The updated task.
+   * @throws {HttpException} Throws an HTTP exception with a relevant status code
+   * if the task does not exist or if the update fails.
+   */
+  async updateTask(id: string, task: UpdateTaskDTO): Promise<Task> {
+    try {
+      const updatedTask = await this.prisma.task.update({
+        where: { id },
+        data: {
+          topic: task.topic,
+          description: task.description,
+          dueDate: task.dueDate,
+        },
+      });
+      return updatedTask;
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        throw new HttpException(
+          'Failed to update task. Task not found.',
+          HttpStatus.NOT_FOUND,
+        );
+      }
+      throw new HttpException(
+        'Failed to update task',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+}
