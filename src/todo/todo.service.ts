@@ -3,7 +3,7 @@ import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { Prisma, Task } from '@prisma/client';
 import { Queue } from 'bull';
 import { PrismaService } from '../prisma.service';
-import type { CreateTaskDTO } from './dtos';
+import type { CreateTaskDTO, UpdateTaskDTO } from './dtos';
 
 /**
  * Service for managing to-do tasks.
@@ -12,7 +12,7 @@ import type { CreateTaskDTO } from './dtos';
 export class TodoService {
   constructor(
     private prisma: PrismaService,
-    @InjectQueue('task-status') private taskStatusQueue: Queue,
+    @InjectQueue('task-status') private readonly taskStatusQueue: Queue,
   ) {}
 
   /**
@@ -99,6 +99,40 @@ export class TodoService {
     } catch (error) {
       throw new HttpException(
         'Failed to retrieve tasks',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  /**
+   * Update a task by its ID.
+   *
+   * @param {string} id - The ID of the task to update.
+   * @param {UpdateTaskDTO} task - The updated task data.
+   * @returns {Promise<Task>} The updated task.
+   * @throws {HttpException} Throws an HTTP exception with a relevant status code
+   * if the task does not exist or if the update fails.
+   */
+  async updateTask(id: string, task: UpdateTaskDTO): Promise<Task> {
+    try {
+      const updatedTask = await this.prisma.task.update({
+        where: { id },
+        data: {
+          topic: task.topic,
+          description: task.description,
+          dueDate: task.dueDate,
+        },
+      });
+      return updatedTask;
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        throw new HttpException(
+          'Failed to update task. Task not found.',
+          HttpStatus.NOT_FOUND,
+        );
+      }
+      throw new HttpException(
+        'Failed to update task',
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
