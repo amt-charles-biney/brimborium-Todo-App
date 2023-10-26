@@ -22,7 +22,7 @@ async function bootstrap() {
       cookie: {
         secure: false,
         httpOnly: process.env.NODE_ENV == 'production' ? true : false,
-        maxAge: 86400000,
+        maxAge: +process.env.SESSION_EXPIRATION,
       },
     }),
   );
@@ -30,6 +30,6 @@ async function bootstrap() {
   app.use(passport.initialize());
   app.use(passport.session());
 
-  await app.listen(3000);
+  await app.listen(+process.env.SERVER_PORT);
 }
 bootstrap();
