@@ -20,7 +20,7 @@ export class TaskStatusProcessor {
    * @param {Job} job - The Bull job containing task information.
    */
   @Process('updateStatus')
-  async updateStatus(job: Job) {
+  async updateStatus(job: Job<{ taskId: string; dueDate: Date }>) {
     /**
      * The ID of the task to update.
      * @type {string}
