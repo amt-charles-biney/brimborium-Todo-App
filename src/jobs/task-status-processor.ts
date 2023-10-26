@@ -27,7 +27,6 @@ export class TaskStatusProcessor {
      */
     const taskId: string = job.data.taskId;
 
-    console.log(job);
     /**
      * The due date of the task.
      * @type {Date}
