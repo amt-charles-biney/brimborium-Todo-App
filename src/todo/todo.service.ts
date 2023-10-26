@@ -1,5 +1,7 @@
+import { InjectQueue } from '@nestjs/bull';
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { Prisma, Task } from '@prisma/client';
+import { Queue } from 'bull';
 import { PrismaService } from '../prisma.service';
 import type { CreateTaskDTO } from './dtos';
 
@@ -8,7 +10,10 @@ import type { CreateTaskDTO } from './dtos';
  */
 @Injectable()
 export class TodoService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    @InjectQueue('task-status') private taskStatusQueue: Queue,
+  ) {}
 
   /**
    * Get a task by its ID.
@@ -37,7 +42,7 @@ export class TodoService {
   }
 
   /**
-   * Create a new task.
+   * Create a new task and sets a new queue for status update.
    *
    * @param task - The task data to be created.
    * @param id - The user ID to associate with the task.
@@ -46,7 +51,7 @@ export class TodoService {
    */
   async createTask(task: CreateTaskDTO, id: string): Promise<Task> {
     try {
-      return await this.prisma.task.create({
+      const newTask = await this.prisma.task.create({
         data: {
           topic: task.topic,
           description: task.description,
@@ -54,6 +59,13 @@ export class TodoService {
           user: { connect: { id } },
         },
       });
+
+      await this.taskStatusQueue.add('updateStatus', {
+        taskId: newTask.id,
+        dueDate: newTask.dueDate,
+      });
+
+      return newTask;
     } catch (error) {
       throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR);
     }
