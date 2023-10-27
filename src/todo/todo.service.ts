@@ -137,4 +137,38 @@ export class TodoService {
       );
     }
   }
+
+  /**
+   * Deletes a task by its ID.
+   *
+   * @param {string} id - The ID of the task to delete.
+   * @returns {Promise<string>} A promise that resolves to the ID of the deleted task.
+   * @throws {HttpException} Throws an HTTP exception with a relevant status code
+   * if the task does not exist or if the deletion fails.
+   */
+  async deleteTask(id: string): Promise<string> {
+    try {
+      await this.prisma.task.delete({
+        where: {
+          id,
+        },
+      });
+
+      return id;
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        if (error.code === 'P2025') {
+          throw new HttpException(
+            'Failed to delete task. Task not found.',
+            HttpStatus.NOT_FOUND,
+          );
+        }
+      }
+
+      throw new HttpException(
+        'Failed to delete task',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
 }
