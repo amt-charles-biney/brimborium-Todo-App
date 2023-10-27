@@ -11,7 +11,7 @@ describe('TodoService', () => {
   let prismaService: PrismaService;
   let taskStatusQueue: Queue;
 
-  beforeEach(async () => {
+  beforeAll(async () => {
     const module: TestingModule = await Test.createTestingModule({
       imports: [
         BullModule.registerQueueAsync({
@@ -44,6 +44,10 @@ describe('TodoService', () => {
     todoService = module.get<TodoService>(TodoService);
     prismaService = module.get<PrismaService>(PrismaService);
     taskStatusQueue = module.get<Queue>('task-status');
+  });
+
+  afterAll(async () => {
+    prismaService.$disconnect();
   });
 
   it('should retrieve a task successfully', async () => {
@@ -225,6 +229,22 @@ describe('TodoService', () => {
       expect(error).toBeInstanceOf(HttpException);
       expect(error.message).toEqual('Failed to delete task. Task not found.');
       expect(error.getStatus()).toEqual(HttpStatus.NOT_FOUND);
+    }
+  });
+
+  it('should handle general errors during task deletion', async () => {
+    const taskId = '1';
+
+    prismaService.task.delete = jest
+      .fn()
+      .mockRejectedValue(new Error('General deletion error'));
+
+    try {
+      await todoService.deleteTask(taskId);
+    } catch (error) {
+      expect(error).toBeInstanceOf(HttpException);
+      expect(error.message).toEqual('Failed to delete task');
+      expect(error.getStatus()).toEqual(HttpStatus.INTERNAL_SERVER_ERROR);
     }
   });
 });
