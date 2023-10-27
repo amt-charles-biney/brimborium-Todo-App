@@ -204,4 +204,15 @@ describe('TodoService', () => {
       expect(error.getStatus()).toEqual(HttpStatus.NOT_FOUND);
     }
   });
+
+  it('should delete a task successfully', async () => {
+    const taskId = '1';
+
+    prismaService.task.delete = jest.fn();
+
+    await expect(todoService.deleteTask(taskId)).resolves.toEqual(taskId);
+    expect(prismaService.task.delete).toHaveBeenCalledWith({
+      where: { id: taskId },
+    });
+  });
 });
