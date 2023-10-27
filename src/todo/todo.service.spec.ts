@@ -215,4 +215,16 @@ describe('TodoService', () => {
       where: { id: taskId },
     });
   });
+
+  it('should handle errors during task deletion (Task not found)', async () => {
+    const taskId = '1';
+
+    try {
+      await todoService.deleteTask(taskId);
+    } catch (error) {
+      expect(error).toBeInstanceOf(HttpException);
+      expect(error.message).toEqual('Failed to delete task. Task not found.');
+      expect(error.getStatus()).toEqual(HttpStatus.NOT_FOUND);
+    }
+  });
 });
