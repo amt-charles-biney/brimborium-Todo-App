@@ -79,7 +79,8 @@
       "main.ts",
       ".mock.ts",
       ".guard.ts",
-      "local/"
+      "local/",
+      "dtos/"
     ],
     "rootDir": "src",
     "testRegex": ".*\\.spec\\.ts$",
