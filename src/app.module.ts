@@ -5,6 +5,7 @@ import { TaskStatusModule } from './jobs/task-status.module';
 import { TodoModule } from './todo/todo.module';
 import { UserModule } from './user/user.module';
 import { QueryParserService } from './utilities/query-parser.service';
+import { NotificationModule } from './notification/notification.module';
 
 @Module({
   imports: [
@@ -13,6 +14,7 @@ import { QueryParserService } from './utilities/query-parser.service';
     PassportModule.register({ session: true }),
     TodoModule,
     TaskStatusModule,
+    NotificationModule,
   ],
   providers: [QueryParserService],
 })
