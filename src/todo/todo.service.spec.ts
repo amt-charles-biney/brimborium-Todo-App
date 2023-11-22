@@ -2,6 +2,7 @@ import { BullModule } from '@nestjs/bull';
 import { HttpException, HttpStatus } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { Queue } from 'bull';
+import { NotificationModule } from '../notification/notification.module';
 import { PrismaService } from '../prisma.service';
 import { CreateTaskDTO, UpdateTaskDTO } from './dtos';
 import { TodoService } from './todo.service';
@@ -17,6 +18,7 @@ describe('TodoService', () => {
         BullModule.registerQueueAsync({
           name: 'task-status',
         }),
+        NotificationModule,
       ],
       providers: [
         TodoService,

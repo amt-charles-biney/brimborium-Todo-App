@@ -1,17 +1,26 @@
 import { InjectQueue } from '@nestjs/bull';
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
-import { Prisma, Task } from '@prisma/client';
+import { Prisma, Status, Task } from '@prisma/client';
 import { Queue } from 'bull';
 import { PrismaService } from '../prisma.service';
 import type { CreateTaskDTO, UpdateTaskDTO } from './dtos';
+import { NotificationService } from '../notification/notification.service';
 
 /**
  * Service for managing to-do tasks.
  */
 @Injectable()
 export class TodoService {
+  /**
+   * Constructor for the TodoService class.
+   *
+   * @param prisma - The PrismaService instance for database interactions.
+   * @param notificationService - The NotificationService instance for sending notifications.
+   * @param taskStatusQueue - The Bull Queue instance for managing task status updates.
+   */
   constructor(
     private prisma: PrismaService,
+    private notificationService: NotificationService,
     @InjectQueue('task-status') private readonly taskStatusQueue: Queue,
   ) {}
 
@@ -60,10 +69,36 @@ export class TodoService {
         },
       });
 
-      await this.taskStatusQueue.add('updateStatus', {
-        taskId: newTask.id,
-        dueDate: newTask.dueDate,
-      });
+      const delay = new Date(newTask.dueDate).getTime() - Date.now();
+      const warningDelay = delay - 600000;
+
+      await this.taskStatusQueue.add(
+        'sendWarning',
+        {
+          userId: id,
+          taskId: newTask.id,
+          dueDate: newTask.dueDate,
+        },
+        { delay: warningDelay },
+      );
+
+      await this.taskStatusQueue.add(
+        'updateStatus',
+        {
+          userId: id,
+          taskId: newTask.id,
+          dueDate: newTask.dueDate,
+        },
+        { delay },
+      );
+
+      await this.notificationService.pushNotification(
+        id,
+        this.notificationService.buildMessage(
+          newTask,
+          'A new task has been assigned to you.',
+        ),
+      );
 
       return newTask;
     } catch (error) {
@@ -87,6 +122,7 @@ export class TodoService {
   }): Promise<Task[]> {
     try {
       const { skip, take, cursor, where, orderBy } = params;
+
       const tasks = await this.prisma.task.findMany({
         skip,
         take,
@@ -105,6 +141,50 @@ export class TodoService {
   }
 
   /**
+   * Get a list of tasks with optional pagination, filtering, and update the status of a specific task.
+   *
+   * @param params - An object containing optional parameters for filtering and pagination.
+   * @param query - An object containing the current task ID.
+   * @returns {Promise<Task[]>} A promise that resolves to a list of tasks that match the specified criteria.
+   * @throws {HttpException} Throws an exception if the tasks could not be found or processed.
+   */
+  async tasks_(
+    params: {
+      skip?: number;
+      take?: number;
+      cursor?: Prisma.TaskWhereUniqueInput;
+      where?: Prisma.TaskWhereInput;
+      orderBy?: Prisma.TaskOrderByWithRelationInput;
+    },
+    query: { currentTaskId: string },
+  ): Promise<Task[]> {
+    try {
+      const { skip, take, cursor, where, orderBy } = params;
+      const { currentTaskId } = query;
+
+      return this.prisma.$transaction(async (tsx) => {
+        await tsx.task.update({
+          where: { id: currentTaskId, status: Status.TO_DO },
+          data: { status: Status.IN_PROGRESS },
+        });
+
+        return await tsx.task.findMany({
+          skip,
+          take,
+          cursor,
+          where,
+          orderBy,
+        });
+      });
+    } catch (error) {
+      throw new HttpException(
+        'Failed to retrieve tasks',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  /**
    * Update a task by its ID.
    *
    * @param {string} id - The ID of the task to update.
@@ -114,15 +194,49 @@ export class TodoService {
    * if the task does not exist or if the update fails.
    */
   async updateTask(id: string, task: UpdateTaskDTO): Promise<Task> {
+    const { topic, description, dueDate } = task;
     try {
       const updatedTask = await this.prisma.task.update({
         where: { id },
         data: {
-          topic: task.topic,
-          description: task.description,
-          dueDate: task.dueDate,
+          topic: topic && topic,
+          description: description && description,
+          dueDate: dueDate && dueDate,
         },
       });
+      return updatedTask;
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        throw new HttpException(
+          'Failed to update task. Task not found.',
+          HttpStatus.NOT_FOUND,
+        );
+      }
+      throw new HttpException(
+        'Failed to update task',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  /**
+   * Update a task's status by its ID.
+   *
+   * @param {string} id - The ID of the task to update.
+   * @param {Status} status - The updated task data.
+   * @returns {Promise<Task>} The updated task.
+   * @throws {HttpException} Throws an HTTP exception with a relevant status code
+   * if the task does not exist or if the update fails.
+   */
+  async updateTaskStatus(id: string, status: Status): Promise<Task> {
+    try {
+      const updatedTask = await this.prisma.task.update({
+        where: { id },
+        data: {
+          status,
+        },
+      });
+
       return updatedTask;
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError) {
