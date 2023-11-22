@@ -1,7 +1,7 @@
 import { HttpException, HttpStatus } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import * as bcrypt from 'bcrypt';
-import { PrismaService } from '../prisma.service';
+import { PrismaService } from '../config/prisma/prisma.service';
 import { UserService } from './user.service';
 
 jest.mock('bcrypt', () => ({

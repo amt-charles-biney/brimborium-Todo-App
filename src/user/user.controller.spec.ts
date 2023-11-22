@@ -3,7 +3,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { CreateUserDto } from './dtos/create-user.dto';
 import { UserController } from './user.controller';
 import { UserService } from './user.service';
-import { PrismaService } from '../prisma.service';
+import { PrismaService } from '../config/prisma/prisma.service';
 
 describe('UserController', () => {
   let userController: UserController;
